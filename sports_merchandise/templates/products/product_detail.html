@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ product.name }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div>
+        <h1>{{ product.name }}</h1>
+
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" width="300">
+
+        <p><strong>Stock Quantity:</strong> {{ product.stock_quantity }}</p>
+        <p><strong>Unit Price:</strong> ${{ product.unit_price }}</p>
+        <p><strong>Total Price:</strong> ${{ product.total_price }}</p>
+        <p><strong>Description:</strong> {{ product.description }}</p>
+        <p><strong>Supplier:</strong> {{ product.supplier }}</p>
+        <p><strong>Location:</strong> {{ product.location }}</p>
+        <p><strong>Previous Restock Date:</strong> {{ product.previous_restock_date }}</p>
+        <p><strong>Next Restock Date:</strong> {{ product.next_restock_date }}</p>
+
+        <a href="{% url 'product_list' %}">Back to Product List</a>
+    </div>
+
+    <div class="sales-chart-container"></div>
+        <h2>Sales Performance</h2>
+        <canvas id="salesChart"></canvas>
+    </div>
+    
+    <script>
+        // Get sales data from Django
+        const salesData = JSON.parse('{{ sales_data|safe }}');
+
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: salesData.labels,
+                datasets: [{
+                    label: 'Sales',
+                    data: salesData.sales,
+                    borderColor: 'blue',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: 'Date' } },
+                    y: { title: { display: true, text: 'Sales' } }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
