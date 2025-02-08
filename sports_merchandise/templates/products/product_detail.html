@@ -1,36 +1,192 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ product.name }}</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #fafbfd;
+        }
+        .container {
+            max-width: 900px;
+            background: #fcfbfb;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 0 auto;
+
+        }
+        h1, h3 {
+            text-align: center;
+            color: #333;
+        }
+
+        .product-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .pic {
+            width: 250px;
+            height: auto;
+        }
+
+        .pic img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .description {
+            flex: 1;
+            background: #f3f2f2;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            min-width: 280px;
+        }
+
+        .description p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* QR Code Section */
+        .qrcode {
+            text-align: center;
+            border: 2px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 350px;
+            margin: 20px auto; /* Centering */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+        }
+
+        /* sales chart section */
+        .chart-container {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        /* Back Link */
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 16px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Restock History */
+        .history {
+            background: #f3f2f2;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 30px auto; /* Centering */
+        }
+
+        .history ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .history ul li {
+            margin-bottom: 10px;
+        }
+
+
+        /* 📱 Responsive Styles */
+        @media (max-width: 768px) {
+            .product-info {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .pic, .description {
+                width: 100%;
+            }
+
+            .history, .qrcode {
+                width: 90%;
+                margin: 20px auto;
+            }
+        }
+
+    </style>
 </head>
 <body>
-    <div>
+    <div class="container">
         <h1>{{ product.name }}</h1>
 
-        <img src="{{ product.image.url }}" alt="{{ product.name }}" width="300">
+        <div class="product-info">
+            <div class="pic">
+                <img src="{{ product.image.url }}" alt="{{ product.name }}">
+            </div>
+            <div class="description">
+                <p><strong>Stock Quantity:</strong> {{ product.stock_quantity }}</p>
+                <p><strong>Sold Quantity:</strong> {{ product.get_sold_quantity }}</p>
+                <p><strong>Available Stock:</strong> {{ product.get_available_stock }}</p>
+                <p><strong>Unit Price:</strong> ${{ product.unit_price }}</p>
+                <p><strong>Total Price:</strong> ${{ product.total_price }}</p>
+                <p><strong>Description:</strong> {{ product.description }}</p>
+                <p><strong>Supplier:</strong> {{ product.supplier }}</p>
+                <p><strong>Location:</strong> {{ product.location }}</p>
+                <p><strong>Previous Restock Date:</strong> {{ product.previous_restock_date }}</p>
+            </div>
+        </div>
 
-        <p><strong>Stock Quantity:</strong> {{ product.stock_quantity }}</p>
-        <p><strong>Unit Price:</strong> ${{ product.unit_price }}</p>
-        <p><strong>Total Price:</strong> ${{ product.total_price }}</p>
-        <p><strong>Description:</strong> {{ product.description }}</p>
-        <p><strong>Supplier:</strong> {{ product.supplier }}</p>
-        <p><strong>Location:</strong> {{ product.location }}</p>
-        <p><strong>Previous Restock Date:</strong> {{ product.previous_restock_date }}</p>
-        <p><strong>Next Restock Date:</strong> {{ product.next_restock_date }}</p>
+        <div class="qrcode">
+            <h3>Scan to View Product Details</h3>
+            {% if product.qr_code %}
+                <img src="{{ product.qr_code.url }}" alt="QR Code">
+            {% else %}
+                <p>QR code not available</p>
+            {% endif %}
+            
+            <button onclick="printQRCode()">Print QR Code</button>
+        </div>
 
-        <a href="{% url 'product_list' %}">Back to Product List</a>
+        <div class="chart-container">
+            <h3>Sales Performance</h3>
+            <canvas id="salesChart"></canvas>
+        </div>
+
+        <a href="{% url 'product_list' %}" class="back-link">&larr; Back to Product List</a>
     </div>
 
-    <div class="sales-chart-container"></div>
-        <h2>Sales Performance</h2>
-        <canvas id="salesChart"></canvas>
+    <div class="history">
+        <h3>Restock History</h3>
+        {% if product.restockhistory_set.all %}
+            <ul>
+                {% for restock in product.restockhistory_set.all %}
+                    <li><strong>{{ restock.quantity }} units</strong> added on {{ restock.timestamp }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No restock history available.</p>
+        {% endif %}
+        
+        
     </div>
-    
+
     <script>
-        // Get sales data from Django
         const salesData = JSON.parse('{{ sales_data|safe }}');
-
         const ctx = document.getElementById('salesChart').getContext('2d');
         new Chart(ctx, {
             type: 'line',
@@ -52,7 +208,15 @@
                 }
             }
         });
-    </script>
 
+        function printQRCode() {
+        var qrWindow = window.open('', '_blank');
+        qrWindow.document.write('<html><head><title>Print QR Code</title></head><body>');
+        qrWindow.document.write('<img src="{{ product.qr_code.url }}" style="width:300px; height:300px;">');
+        qrWindow.document.write('<script>window.onload = function() { window.print(); }<\/script>');
+        qrWindow.document.write('</body></html>');
+        qrWindow.document.close();
+    }
+    </script>
 </body>
 </html>
