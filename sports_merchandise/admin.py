@@ -7,7 +7,7 @@ class RestockHistoryInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'stock_quantity', 'get_sold_quantity', 'get_available_stock', 'unit_price', 'supplier', 'total_price', 'qr_code')
+    list_display = ('name', 'category', 'get_sold_quantity', 'get_available_stock', 'unit_price', 'supplier', 'total_price', 'qr_code')
     search_fields = ('name', 'supplier', 'location')
     list_filter = ('supplier', 'location')
 
@@ -36,3 +36,4 @@ class SalesRecordAdmin(admin.ModelAdmin):
 class RestockHistoryAdmin(admin.ModelAdmin):
     list_display = ('product', 'quantity', 'timestamp')
     ordering = ('-timestamp',)
+    

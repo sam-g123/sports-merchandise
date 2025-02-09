@@ -18,6 +18,7 @@ class ProductFactory(factory.django.DjangoModelFactory):
     description = factory.Faker("text", max_nb_chars=200)
     supplier = factory.Faker("company")
     location = factory.Faker("address")
+    category = factory.Faker("word")
 
     @factory.lazy_attribute
     def image(self):
@@ -37,7 +38,6 @@ class ProductFactory(factory.django.DjangoModelFactory):
     def ensure_qr_code(self, create, extracted, **kwargs):
         if create:
             self.save()  # Save again to trigger QR code generation
-
 
 
 # Factory for generating test sales records

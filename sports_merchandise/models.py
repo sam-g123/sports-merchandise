@@ -5,63 +5,85 @@ from django.urls import reverse
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
-
-# Create your models here.
+import os
+from django.conf import settings
 
 class Product(models.Model):
     image = models.ImageField(null=True, blank=True)
     name = models.CharField(max_length=255)
-    stock_quantity = models.PositiveIntegerField() # Original stock before sales
+    stock_quantity = models.PositiveIntegerField(default=0)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False, default=0.00)
     description = models.TextField()
+    category = models.CharField(max_length=100)
     supplier = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
-    previous_restock_date = models.DateField(null=True, blank=True, editable=False)  # Timestamped previous restock date
-    restock_quantity = models.PositiveIntegerField(null=True, blank=True)  # Restock quantity to add to stock
-    restock_date = models.DateTimeField(null=True, blank=True)  # Timestamped restock date
+    previous_restock_date = models.DateField(null=True, blank=True, editable=False)
+    restock_date = models.DateTimeField(null=True, blank=True)
     qr_code = models.ImageField(blank=True, null=True)
-    # add categories
-
 
     def get_absolute_url(self):
         return reverse('product_detail', args=[str(self.id)])
 
     def generate_qr_code(self):
-        """Generate and save a QR code linking to the product's details page."""
-        url = f"http://10.42.0.1:9000{self.get_absolute_url()}"
+        """Generate QR code only if the product has an ID."""
+        if not self.pk:
+            return  # Ensure the object is saved before generating the QR code
+
+        # Fetch the base URL from .env, defaulting to localhost if not set
+        base_url = getattr(settings, "QR_CODE_BASE_URL", "http://localhost:8000")
+        url = f"{base_url}{self.get_absolute_url()}"
         qr = qrcode.make(url)
         buffer = BytesIO()
         qr.save(buffer, format="PNG")
         self.qr_code.save(f"{self.name}_qr.png", ContentFile(buffer.getvalue()), save=False)
 
     def get_sold_quantity(self):
-        from .models import SalesRecord  # Import here to avoid circular import issues
-        sales = SalesRecord.objects.filter(product=self).aggregate(total_sold=Sum('quantity'))['total_sold']
+        if not self.pk:
+            return 0
+        sales = self.sales_records.aggregate(total_sold=Sum('quantity'))['total_sold']
         return sales if sales else 0
 
     def get_available_stock(self):
-        return self.stock_quantity - self.get_sold_quantity()
-    
+        """Calculate stock based on total restocks minus sales."""
+        if not self.pk:
+            return 0  # If the product is not saved yet, available stock is 0
+
+        # Get total restocked quantity (sum of all restocks)
+        total_restocked = self.restockhistory_set.aggregate(total=Sum('quantity'))['total'] or 0
+
+        # Get total sold quantity
+        total_sold = self.sales_records.aggregate(total=Sum('quantity'))['total'] or 0
+
+        # Available stock = Total restocked - Total sold
+        return max(0, total_restocked - total_sold)
+
     def add_restock(self, quantity, restock_date=None):
-        """
-        Update stock with the given quantity, timestamp it, and log it in RestockHistory.
-        """
         if quantity > 0:
             restock_date = restock_date or timezone.now()
-            
-            # Create a new entry in RestockHistory
-            RestockHistory.objects.create(product=self, quantity=quantity, timestamp=restock_date)
+            restock_history = RestockHistory.objects.filter(product=self)
 
-            # Update stock quantity
-            self.stock_quantity += quantity
+            if not restock_history.exists():
+                self.stock_quantity = quantity  # First restock sets the stock
+            else:
+                self.stock_quantity += quantity  # Normal restock adds to stock
+
             self.previous_restock_date = self.restock_date
             self.restock_date = restock_date
             self.save()
-    
+
+            RestockHistory.objects.create(product=self, quantity=quantity, timestamp=restock_date)
+
     def save(self, *args, **kwargs):
-        self.generate_qr_code()  # Auto-generate QR code before saving
-        self.total_price = self.get_available_stock()  * self.unit_price
+        is_new = self.pk is None
+        super().save(*args, **kwargs)  # Save initially to get an ID
+
+        # Generate QR code only after saving the product with a valid ID
+        if is_new and not self.qr_code:
+            self.generate_qr_code()
+            super().save(update_fields=['qr_code'])  # Save QR code only
+
+        self.total_price = self.get_available_stock() * self.unit_price
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -74,11 +96,9 @@ class SalesRecord(models.Model):
 
     def save(self, *args, **kwargs):
         if self.pk is None:  # Only reduce stock on new sales, not updates
-            self.product.stock_quantity -= self.quantity  # Reduce stock quantity
-            self.product.save()  # Save the updated stock quantity
-
-        super().save(*args, **kwargs)  # Save the SalesRecord
-
+            self.product.stock_quantity -= self.quantity
+            self.product.save()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.product.name} - {self.quantity} sold on {self.date}"
@@ -93,4 +113,3 @@ class RestockHistory(models.Model):
     
     class Meta:
         verbose_name_plural = "Restock Histories"
-

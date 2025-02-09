@@ -17,7 +17,8 @@
             background: #fcfbfb;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: gray 0px 0px 10px;
+
             margin: 0 auto;
 
         }
@@ -28,34 +29,35 @@
 
         .product-info {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .pic {
-            width: 250px;
-            height: auto;
+            align-items: stretch; /* Ensures equal height */
+            gap: 20px; /* Adds spacing between image & description */
+            margin: 20px;
         }
 
         .pic img {
-            width: 100%;
-            border-radius: 8px;
+            width: 350px; /* Set a fixed width */
+            height: 100%; /* Matches the height of the description */
+            object-fit: cover; /* Ensures the image scales correctly */
+            border-radius: 8px; /* Optional: Adds rounded corners */
+            box-shadow: gray 0px 0px 10px;
+
         }
 
         .description {
-            flex: 1;
-            background: #f3f2f2;
-            padding: 15px;
+            flex: 1; /* Takes the remaining space */
+            padding: 20px;
+            border: 2px solid #ddd;
             border-radius: 8px;
-            border: 1px solid #ddd;
-            min-width: 280px;
+            background-color: #f9f9f9; /* Light gray background */
+            font-family: Arial, sans-serif;
+            box-shadow: gray 0px 0px 10px;
+
         }
 
         .description p {
+            margin: 10px 0;
             font-size: 16px;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
         /* QR Code Section */
@@ -98,6 +100,8 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             max-width: 400px;
             margin: 30px auto; /* Centering */
+            box-shadow: gray 0px 0px 10px;
+
         }
 
         .history ul {
@@ -139,11 +143,11 @@
                 <img src="{{ product.image.url }}" alt="{{ product.name }}">
             </div>
             <div class="description">
-                <p><strong>Stock Quantity:</strong> {{ product.stock_quantity }}</p>
-                <p><strong>Sold Quantity:</strong> {{ product.get_sold_quantity }}</p>
                 <p><strong>Available Stock:</strong> {{ product.get_available_stock }}</p>
+                <p><strong>Sold Quantity:</strong> {{ product.get_sold_quantity }}</p>
                 <p><strong>Unit Price:</strong> ${{ product.unit_price }}</p>
                 <p><strong>Total Price:</strong> ${{ product.total_price }}</p>
+                <p><strong>Category:</strong> {{ product.category }}</p>
                 <p><strong>Description:</strong> {{ product.description }}</p>
                 <p><strong>Supplier:</strong> {{ product.supplier }}</p>
                 <p><strong>Location:</strong> {{ product.location }}</p>
