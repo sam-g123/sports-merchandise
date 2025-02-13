@@ -5,13 +5,13 @@ __pycache__/
 migrations/
 
 # Ignore media files
-media/
+
 
 # Ignore environment variables
 .env
 
 # Ignore SQLite database
-db.sqlite3
+
 
 # Ignore coverage report
 .coverage
