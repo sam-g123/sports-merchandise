@@ -28,6 +28,9 @@ DEBUG = os.getenv('DEBUG') == 'True'
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',')]
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://sports-inventory-merchandise.onrender.com",
+]
 
 # Application definition
 
